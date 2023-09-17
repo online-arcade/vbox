@@ -1,8 +1,8 @@
 var ws_server;
 var ws_port;
-var default_peer_id = "gst";
+
 //var rtc_configuration = {iceServers: [{urls: "stun:stun.l.google.com:19302"}]};
-var rtc_configuration = {iceServers: [{urls: "stun:gamebox.zgwit.cn:3478"}]};
+var rtc_configuration = {iceServers: [{urls: "stun:gamebox.zgwit.cn:3478"}],bundlePolicy:"max-compat"};
 
 var connect_attempts = 0;
 var peer_connection = new RTCPeerConnection(rtc_configuration);
@@ -12,6 +12,11 @@ var ws_conn;
 var callCreateTriggered = false;
 var makingOffer = false;
 var isSettingRemoteAnswerPending = false;
+
+var setRemoteDescription = false;
+var earlyIces = []
+
+var gatherCompleted = false;
 
 
 function resetState() {
@@ -36,6 +41,9 @@ function onIncomingSDP(sdp) {
 	peer_connection.setRemoteDescription(sdp).then(() => {
 		console.log("Remote SDP set");
 		peer_connection.setLocalDescription().then(() => {
+            // window.setTimeout(()=>{
+            //     setRemoteDescription = true;
+            // },100)
 			let desc = peer_connection.localDescription;
 			console.log("Got local description: ", JSON.stringify(desc));
 			ws_conn.send(JSON.stringify({'sdp': desc}));
@@ -49,6 +57,18 @@ function onIncomingSDP(sdp) {
 
 // ICE candidate received from peer, add it to the peer connection
 function onIncomingICE(ice) {
+    // if (!setRemoteDescription) {
+    //     earlyIces.push(ice)
+    //     return;
+    // }
+    // if (earlyIces.length > 0) {
+    //     earlyIces.forEach(ice=>{
+    //         var candidate = new RTCIceCandidate(ice);
+    //         peer_connection.addIceCandidate(candidate).catch(console.error);
+    //     })
+    //     earlyIces = []
+    // }
+    if (gatherCompleted) return;
     var candidate = new RTCIceCandidate(ice);
     peer_connection.addIceCandidate(candidate).catch(console.error);
 }
@@ -162,7 +182,7 @@ function createCall() {
     };
 
     peer_connection.onicecandidate = (event) => {
-        console.log("onicecandidate", event);
+        console.log("onicecandidate", JSON.stringify({'ice': event.candidate}));
         // We have a candidate, send it to the remote party with the
         // same uuid
         if (event.candidate == null) {
@@ -172,8 +192,9 @@ function createCall() {
         ws_conn.send(JSON.stringify({'ice': event.candidate}));
     };
     peer_connection.oniceconnectionstatechange = (event) => {
-        console.log("oniceconnectionstatechange", event);
+        console.log("oniceconnectionstatechange", peer_connection.iceConnectionState);
         if (peer_connection.iceConnectionState == "connected") {
+            gatherCompleted = true;
             console.log("ICE gathering complete");
         }
     };

@@ -1,14 +1,4 @@
 <!DOCTYPE html>
-<!--
-  vim: set sts=2 sw=2 et :
-
-
-  Demo Javascript app for negotiating and streaming a sendrecv webrtc stream
-  with a GStreamer app. Runs only in passive mode, i.e., responds to offers
-  with answers, exchanges ICE candidates, and streams.
-
-  Author: Nirbheek Chauhan <nirbheek@centricular.com>
--->
 <html>
   <head>
     <meta charset="utf-8"/>
@@ -19,13 +9,17 @@
     <script src="webrtc.js"></script>
     <script>
       window.onload = websocketServerConnect;
-      
+
       console.error = function(){
         err = document.getElementById("error")
         var d = document.createElement("div")
         d.innerText = new Date().toLocaleString() +":"+ JSON.stringify(arguments)
         err.insertBefore(d, err.firstChild)
       }
+    </script>
+    <script src="https://cdn.bootcss.com/vConsole/3.3.4/vconsole.min.js"></script>
+    <script>
+      new VConsole();
     </script>
   </head>
 
